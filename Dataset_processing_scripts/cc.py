@@ -3,9 +3,14 @@ import numpy as np
 import Image
 import sys
 
+import pandas as pd
+
 import matplotlib.image as mpimg
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+import os.path
+from os import path
 
 def from_pil(pimg):
     pimg = pimg.convert(mode='RGB')
@@ -88,31 +93,32 @@ def retinex_adjust(nimg):
 def retinex_with_adjust(nimg):
     return retinex_adjust(retinex(nimg))
 
-if __name__=="__main__":
-    img = Image.open(sys.argv[1])
-    #img.show()
-    Stretch_img = to_pil(stretch(from_pil(img)))
-    #Stretch_img.show(title="strech")
-    Stretch_img.save("strech.png")
-    Grey_world =to_pil(grey_world(from_pil(img)))
-    #Grey_world.show(title="grey_world")
-    Grey_world.save("grey_world.png")
-    Retinex = to_pil(retinex(from_pil(img)))
-    #Retinex.show(title="retinex")
-    Retinex.save("retinex.png")
-    Max_white = to_pil(max_white(from_pil(img)))
-    #Max_white.show(title="max_white.png")
-    Retinex_adjust = to_pil(retinex_adjust(retinex(from_pil(img))))
-    #Retinex_adjust.show(title="retinex_adjust")
-    Retinex_adjust.save("retinex_adjust.png")
+def white_balance(pimg, gt_rgb):
+    pimg = pimg.convert('RGB')
+    min_rgb = min(min(gt_rgb[0],gt_rgb[1]),gt_rgb[2])
+    R = min_rgb/gt_rgb[0]
+    G = min_rgb/gt_rgb[1]
+    B = min_rgb/gt_rgb[2]
+    r_ch, g_ch, b_ch = pimg.split()
+    r_ch = r_ch.point(lambda i: i * R)
+    g_ch = g_ch.point(lambda i: i * G)
+    b_ch = b_ch.point(lambda i: i * B)
+    out = Image.merge('RGB', (r_ch, g_ch, b_ch))
+    return out
 
-    img = mpimg.imread(sys.argv[1])
+def show_chroma_histogram(filename):
+    return
+    img = mpimg.imread(filename)
     pixels = img.shape[0]*img.shape[1]
     channels = 3
     data = np.reshape(img[:, :, :channels], (pixels, channels)).astype(np.float64)
     print(data.shape)
     x = np.ma.log(data[:, 1] / data[:, 0])
     y = np.ma.log(data[:, 1] / data[:, 2])
+
+    df = pd.DataFrame(x,y)
+    df[~df.isin([np.nan, np.inf, -np.inf]).any(1)]
+    print(df)
 
     #x = x[~np.isnan(x)]
     #x = x[~np.isinf(x)]
@@ -142,7 +148,7 @@ if __name__=="__main__":
     #histo_uv, _ = np.histogramdd(image, bins=256)
     #u,v = np.nonzero(histo_uv)
     fig = plt.figure()
-    plt.hist2d(x_, y_, bins=256)
+    plt.hist2d(x[valid_mask], y[valid_mask], bins=256)
 
     #ax = fig.add_subplot(111, projection='2d')
     #ax.scatter(u,v)
@@ -150,3 +156,33 @@ if __name__=="__main__":
     #ax.set_ylabel('V')
     plt.title('UV log chrominance plot')
     plt.show()
+
+if __name__=="__main__":
+    img = Image.open(sys.argv[1])
+    #img.show()
+    Stretch_img = to_pil(stretch(from_pil(img)))
+    #Stretch_img.show(title="strech")
+    Stretch_img.save("strech.png")
+    Grey_world =to_pil(grey_world(from_pil(img)))
+    #Grey_world.show(title="grey_world")
+    Grey_world.save("grey_world.png")
+    Retinex = to_pil(retinex(from_pil(img)))
+    #Retinex.show(title="retinex")
+    Retinex.save("retinex.png")
+    Max_white = to_pil(max_white(from_pil(img)))
+    #Max_white.show(title="max_white.png")
+    Retinex_adjust = to_pil(retinex_adjust(retinex(from_pil(img))))
+    #Retinex_adjust.show(title="retinex_adjust")
+    Retinex_adjust.save("retinex_adjust.png")
+    """if len(sys.argv) > 4:
+        r = float(sys.argv[2])
+        g = float(sys.argv[3])
+        b = float(sys.argv[4])
+        White_bal = to_pil(white_balance(img,r,g,b))
+        White_bal.show()"""
+    if path.exists(sys.argv[1][:-3] + "txt"):
+        gt = np.loadtxt(sys.argv[1][:-3]+"txt")
+        White_bal = to_pil(white_balance(img,gt))
+        White_bal.show()
+        White_bal.save("ground_truth.png")
+    show_chroma_histogram(sys.argv[1])
