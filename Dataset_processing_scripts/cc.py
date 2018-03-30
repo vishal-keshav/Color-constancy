@@ -40,13 +40,13 @@ def grey_world(nimg):
 
 def max_white(nimg):
     if nimg.dtype==np.uint8:
-        print("Input image type: unit8")
+        #print("Input image type: unit8")
         brightest=float(2**8)
     elif nimg.dtype==np.uint16:
-        print("Input image type: unit16")
+        #print("Input image type: unit16")
         brightest=float(2**16)
     elif nimg.dtype==np.uint32:
-        print("Input image type: unit32")
+        #print("Input image type: unit32")
         brightest=float(2**32)
     else:
         brightest==float(2**8)
@@ -107,49 +107,19 @@ def white_balance(pimg, gt_rgb):
     return out
 
 def show_chroma_histogram(filename):
-    return
     img = mpimg.imread(filename)
     pixels = img.shape[0]*img.shape[1]
     channels = 3
     data = np.reshape(img[:, :, :channels], (pixels, channels)).astype(np.float64)
-    print(data.shape)
-    x = np.ma.log(data[:, 1] / data[:, 0])
-    y = np.ma.log(data[:, 1] / data[:, 2])
+    #print(data.shape)
+    x = np.ma.log(data[:, 1]) - np.ma.log(data[:, 0])
+    y = np.ma.log(data[:, 1]) - np.ma.log(data[:, 2])
 
-    df = pd.DataFrame(x,y)
-    df[~df.isin([np.nan, np.inf, -np.inf]).any(1)]
-    print(df)
+    df = pd.DataFrame({'U': x, 'V': y})
+    df = df.dropna()
 
-    #x = x[~np.isnan(x)]
-    #x = x[~np.isinf(x)]
-    #y = y[~np.isnan(y)]
-    #y = y[~np.isinf(y)]
-
-    print()
-    x_valid_mask = np.logical_and(~np.isnan(x),~np.isinf(x))
-    y_valid_mask = np.logical_and(np.isnan(y),~np.isinf(y))
-
-    valid_mask = np.logical_and(x_valid_mask,y_valid_mask)
-
-    print(valid_mask.shape)
-    x_ = []
-    y_ = []
-    for i in range(0, len(x)):
-        if (np.isnan(x[i]) or np.isnan(y[i]) or np.isinf(x[i]) or np.isinf(y[i])):
-            print("Error")
-
-    image = np.stack([np.ma.log(data[:, 1] / data[:, 0]), np.ma.log(data[:, 1] / data[:, 2])], axis = 0)
-    image = image[~np.isnan(image)]
-    print(image.shape)
-    print(len(x_))
-    #print(x_)
-    print(len(y_))
-    #print(y_)
-    #histo_uv, _ = np.histogramdd(image, bins=256)
-    #u,v = np.nonzero(histo_uv)
     fig = plt.figure()
-    plt.hist2d(x[valid_mask], y[valid_mask], bins=256)
-
+    plt.hist2d(df['U'], df['V'], bins=256)
     #ax = fig.add_subplot(111, projection='2d')
     #ax.scatter(u,v)
     #ax.set_xlabel('U')
@@ -174,12 +144,7 @@ if __name__=="__main__":
     Retinex_adjust = to_pil(retinex_adjust(retinex(from_pil(img))))
     #Retinex_adjust.show(title="retinex_adjust")
     Retinex_adjust.save("retinex_adjust.png")
-    """if len(sys.argv) > 4:
-        r = float(sys.argv[2])
-        g = float(sys.argv[3])
-        b = float(sys.argv[4])
-        White_bal = to_pil(white_balance(img,r,g,b))
-        White_bal.show()"""
+
     if path.exists(sys.argv[1][:-3] + "txt"):
         gt = np.loadtxt(sys.argv[1][:-3]+"txt")
         White_bal = to_pil(white_balance(img,gt))
