@@ -30,7 +30,7 @@ def build_inference_graph(input_shape, hyper_param, output_shape):
     layer = GlobalAveragePooling2D()(layer)
     layer = Dense(units = 64, activation='relu',
                     kernel_initializer='glorot_uniform')(layer)
-    layer = Dense(units = output_shape, activation='relu',
+    layer = Dense(units = output_shape, activation='sigmoid',
                     kernel_initializer='glorot_uniform')(layer)
     model = Model(inputs = model_input, outputs = layer)
     return model
@@ -61,8 +61,8 @@ def main():
         output_shape = 3
         model_def = build_inference_graph(input_shape, utilities.hyper_param, output_shape)
     model_def.summary()
-    model_def.compile(optimizer = Adam(lr=0.001), loss = 'mse', metrics=['accuracy'])
-    model_def.fit(x_train, y_train, batch_size = 64, epochs = 10)
+    model_def.compile(optimizer = Adam(lr=0.0001), loss = 'mse', metrics=['accuracy'])
+    model_def.fit(x_train, y_train, batch_size = 16, epochs = 10)
     save_model(model_def, 'trained_model')
 
 if __name__ == "__main__":

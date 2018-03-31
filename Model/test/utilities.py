@@ -18,7 +18,7 @@ def nr_digits(i):
     ret = 0
     while i !=0:
         ret = ret+1
-        i = i/10
+        i = int(i/10)
     return ret
 
 def zero_string(i):
@@ -43,7 +43,7 @@ def load_dataset():
         #file_name = [000001, 000002, ... , 000568]
         file_names = []
         for i in range(1, 569):
-            file_names.append('00'+zero_string(4-nr_digits(i))+str(i))
+            file_names.append('00' + zero_string(4-nr_digits(i)) + str(i))
         #print(file_names)
         for index,file_name in enumerate(file_names):
             image_blob = Image.open(os.path.join(path_input, file_name+".png"))

@@ -37,3 +37,36 @@ Non-trainable params: 0
 ```
 
 # Benchmark Results
+
+### Parameters used for training
+Learning rate: 0.0001 with MSE loss, Adam Optimizer
+Trained for 40 epochs with batch size of 16 images
+
+Achieved training accuracy **99.82%**
+```
+Epoch 1/10
+568/568 [==============================] - 3s 6ms/step - loss: 6.5175e-04 - acc: 0.9947
+Epoch 2/10
+568/568 [==============================] - 3s 5ms/step - loss: 5.9143e-04 - acc: 0.9930
+Epoch 3/10
+568/568 [==============================] - 3s 5ms/step - loss: 5.1535e-04 - acc: 0.9912
+Epoch 4/10
+568/568 [==============================] - 3s 5ms/step - loss: 4.8754e-04 - acc: 0.9965
+Epoch 5/10
+568/568 [==============================] - 3s 5ms/step - loss: 4.9264e-04 - acc: 0.9965
+Epoch 6/10
+568/568 [==============================] - 3s 5ms/step - loss: 4.2165e-04 - acc: 0.9947
+Epoch 7/10
+568/568 [==============================] - 3s 5ms/step - loss: 4.3836e-04 - acc: 0.9965
+Epoch 8/10
+568/568 [==============================] - 3s 5ms/step - loss: 4.0249e-04 - acc: 0.9965
+Epoch 9/10
+568/568 [==============================] - 3s 5ms/step - loss: 3.4436e-04 - acc: 0.9982
+Epoch 10/10
+568/568 [==============================] - 3s 5ms/step - loss: 3.3302e-04 - acc: 0.9982
+Saved model in the name:trained_model
+```
+
+# Dataset and trained model
+Dataset to run this project can be found at [LINK](https://1drv.ms/f/s!AmmAl9o7UugUinqb-liPoXqXBrEW)
+For any query: [email](mailto: bulletcross@gmail.com)
