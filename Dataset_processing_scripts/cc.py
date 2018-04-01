@@ -134,6 +134,18 @@ def show_chroma_histogram(filename):
     plt.title('UV log chrominance plot')
     plt.show()
 
+#TO-DO: Generalize to batch input
+def angular_error(v1,v2,type):
+    if type == 'uv':
+        l1 = np.array([np.exp(-v1[0]), 1.0, np.exp(-v1[1])])
+        l2 = np.array([np.exp(-v2[1]), 1.0, np.exp(-v2[1])])
+    else:
+        l1 = np.array([v1[0], v1[1], v1[2]]) #Possibly do sanity check
+        l2 = np.array([v2[0], v2[1], v2[2]]) # and convert.
+    num = np.dot(l1,l2)
+    denom = np.linalg.norm(l1)*np.linalg.norm(l2)
+    return (num/denom)
+
 if __name__=="__main__":
     img = Image.open(sys.argv[1])
     #img.show()
