@@ -2,6 +2,9 @@
 import numpy as np
 from PIL import Image
 import sys
+import os
+from tqdm import tqdm
+import h5py
 
 import pandas as pd
 
@@ -108,10 +111,14 @@ def white_balance(pimg, gt_rgb):
 
 def show_chroma_histogram(filename):
     img = mpimg.imread(filename)
-    pixels = img.shape[0]*img.shape[1]
+    """pixels = img.shape[0]*img.shape[1]
     channels = 3
-    data = np.reshape(img[:, :, :channels], (pixels, channels)).astype(np.float64)
-    #print(data.shape)
+    data = np.reshape(img[:, :, :channels], (pixels, channels)).astype(np.float64)"""
+    print(img.shape)
+    pixels = img.shape[1]*img.shape[2]
+    channels = 3
+    data = np.reshape(img, (pixels, channels)).astype(np.float64)
+    print(data.shape)
     x = np.ma.log(data[:, 1]) - np.ma.log(data[:, 0])
     y = np.ma.log(data[:, 1]) - np.ma.log(data[:, 2])
 

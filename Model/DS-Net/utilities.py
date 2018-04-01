@@ -8,6 +8,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 import h5py
+import tensorflow as tf
 
 hyper_param_hyp = {"filters": [128, 256],
                 "kernel_size": [(8,8), (4,4)],
@@ -23,8 +24,10 @@ hyper_param_sel = {"filters": [128, 256],
 
 def RGB_to_UV(image):
     # u = log(R/G), v = log(B/G)
-    image = np.stack(np.ma.log(image[:,:,0]/image[:,:,2]),
-                     np.ma.log(image[:,:,1]/image[:,:,2]))
+    #print(image.shape)
+    image = np.stack((np.ma.log(image[:,:,0]) - np.ma.log(image[:,:,1]),
+                     np.ma.log(image[:,:,2]) - np.ma.log(image[:,:,1])), axis = 2)
+    #print(image.shape)
     return image
 
 def nr_digits(i):
@@ -42,8 +45,8 @@ def zero_string(i):
 
 #http://lamda.nju.edu.cn/weixs/project/CNNTricks/CNNTricks.html
 def normalize_data(uv_image):
-    uv_image = uv_image - np.mean(uv_image, axis = 2) #Mean broadcasted
-    uv_image = uv_image/np.std(uv_image, axis = 2) #Not described in paper
+    uv_image = uv_image - np.mean(uv_image, axis = 0) #Mean broadcasted
+    uv_image = uv_image/np.std(uv_image, axis = 0) #Not described in paper
     return uv_image
 
 def convert_to_uv(gt_rgb):
@@ -51,23 +54,25 @@ def convert_to_uv(gt_rgb):
     R = min_rgb/gt_rgb[0]
     G = min_rgb/gt_rgb[1]
     B = min_rgb/gt_rgb[2]
-    gt_uv = []
-    gt_uv[0] = mp.ma.log(R/G)
+    gt_uv = np.zeros(2)
+    gt_uv[0] = np.ma.log(R/G)
     gt_uv[1] = np.ma.log(B/G)
     return gt_uv
 
-def split_to_patches(X,Y):
-    sess = K.InteractiveSession()
+def split_to_patches(X1,X2,Y):
+    sess = tf.InteractiveSession()
     with sess.as_default():
-        patches =K.extract_image_patches(images=X, ksizes=[1,44,44, 1],
+        patches1 =tf.extract_image_patches(images=X1, ksizes=[1,44,44, 1],
                                          strides=[1, 44, 44, 1], rates=[1, 1, 1, 1],
                                          padding="VALID").eval()
-        num_train_X, num_patch_row, num_patch_col, depth = patches.shape
-        patch_X = K.reshape(patches,
-                             [num_train_X * num_patch_row * num_patch_col,
-                             PATCH_SIZE[0], PATCH_SIZE[1], PATCH_SIZE[2]]).eval()
+        patches2 =tf.extract_image_patches(images=X2, ksizes=[1,44,44, 1],
+                                         strides=[1, 44, 44, 1], rates=[1, 1, 1, 1],
+                                         padding="VALID").eval()
+        num_train_X, num_patch_row, num_patch_col, depth = patches1.shape
+        patch_X1 = tf.reshape(patches1,[num_train_X*num_patch_row*num_patch_col,44,44,2]).eval()
+        patch_X2 = tf.reshape(patches2,[num_train_X*num_patch_row*num_patch_col,44,44,2]).eval()
     patch_Y = np.repeat(Y, num_patch_row * num_patch_col, axis=0)
-    return patch_X, patch_Y
+    return patch_X1, patch_X2, patch_Y
 
 def load_dataset():
     data_path = os.getcwd()
@@ -79,8 +84,8 @@ def load_dataset():
         y_train = np.array(group_data.get('y_train'))
         data_file.close()
     else:
-        x_train_sel = np.zeros([568, 384, 256, 2], dtype = 'uint8')
-        x_train_hyp = np.zeros([568, 384, 256, 2], dtype = 'uint8')
+        x_train_sel = np.zeros([568, 384, 256, 2], dtype = 'float32')
+        x_train_hyp = np.zeros([568, 384, 256, 2], dtype = 'float32')
         y_train = np.zeros([568, 2], dtype = 'float32')
         path_input = '../../Dataset/GehlerShi_input/'
         path_output = '../../Dataset/GehlerShi_output/'
@@ -103,10 +108,12 @@ def load_dataset():
             y_train[index] = ground_truth
         #x_train = x_train.astype('float32')
         #x_train = x_train/225
+        x_train_sel, x_train_hyp, y_train = split_to_patches(x_train_sel, x_train_hyp, y_train)
         data_file = h5py.File('dataset.h5','w')
         group_data = data_file.create_group('dataset_group')
         group_data.create_dataset('x_train_sel', data=x_train_sel, compression='gzip')
         group_data.create_dataset('x_train_hyp', data=x_train_hyp, compression='gzip')
         group_data.create_dataset('y_train', data=y_train, compression='gzip')
         data_file.close()
-    return (x_train, y_train)
+    print("Dataset loaded.")
+    return (x_train_sel,x_train_hyp, y_train)

@@ -8,7 +8,13 @@ import numpy as np
 from keras.layers import Input, Dense, Flatten, Conv2D, Activation
 from keras.layers import MaxPooling2D, Concatenate, Dropout, GlobalAveragePooling2D
 from keras.layers.normalization import BatchNormalization
+from keras.models import Model, model_from_json
+from keras.optimizers import Adam
 from keras import backend as K
+import tensorflow as tf
+import os
+from tqdm import tqdm
+import h5py
 
 def save_model(model, model_name):
     model_json = model.to_json()
@@ -26,7 +32,7 @@ def load_model(model_name):
     loaded_model.load_weights(model_name+".h5")
     return loaded_model
 
-def build_indeference_graph_hyp(in_shape, param, out_shape):
+def build_inference_graph(in_shape, param, out_shape):
     hp_filters = param['filters']
     hp_kernel = param['kernel_size']
     hp_kernel_s = param['strides_conv']
@@ -43,38 +49,40 @@ def build_indeference_graph_hyp(in_shape, param, out_shape):
     if param['type'] == 'hyp':
         layer = Dense(units = 256, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
-        out_a = Dense(units = 2, activation='relu',
+        out_a = Dense(units = out_shape, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
-        out_b = Dense(units = 2, activation='relu',
+        out_b = Dense(units = out_shape, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
         model = Model(inputs = model_input, outputs = [out_a, out_b])
     else:
         layer = Dense(units = 256, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
-        out = Dense(units = 2, activation='softmax',
+        out = Dense(units = out_shape, activation='softmax',
                         kernel_initializer='glorot_uniform')(layer)
         model = Model(inputs = model_input, outputs = out)
     return model
 
-def hyp_loss(label, out_a, out_b):
+def hyp_loss(y_true, y_pred):
     #Winner-take-all loss
-    error_a = K.square(K.subtract(out_a, label))
-    error_b = K.square(K.subtract(out_b, label))
-    min_error = K.where(K.less(error_a, error_b), error_a, error_b)
-    return K.reduce_mean(min_error)
+    out_a = y_pred[0]
+    out_b = y_pred[1]
+    error_a = tf.square(tf.subtract(out_a, y_true))
+    error_b = tf.square(tf.subtract(out_b, y_true))
+    min_error = tf.where(tf.less(error_a, error_b), error_a, error_b)
+    return tf.reduce_mean(min_error)
 
 def prepare_sel_data(out_a, out_b, label):
-    error_a = K.reduce_sum(K.square(K.subtract(out_a, label)), axis = 1)
-    error_b = K.reduce_sum(K.square(K.subtract(out_b, label)), axis = 1)
-    zeros = K.zeros_like(error_a)
-    ones = K.ones_like(error_a)
-    option_a = K.stack([ones,zeros], axis = 1)
-    option_b = K.stack([zeros,ones], axis = 1)
-    return K.where(K.less(error_a, error_b), option_a, option_b)
+    error_a = tf.reduce_sum(tf.square(tf.subtract(out_a, label)), axis = 1)
+    error_b = tf.reduce_sum(tf.square(tf.subtract(out_b, label)), axis = 1)
+    zeros = tf.zeros_like(error_a)
+    ones = tf.ones_like(error_a)
+    option_a = tf.stack([ones,zeros], axis = 1)
+    option_b = tf.stack([zeros,ones], axis = 1)
+    return tf.where(tf.less(error_a, error_b), option_a, option_b)
 
 
 def main():
-    x_train_sel,x_train_hyp,y_train_hype = ut.load_data()
+    x_train_sel,x_train_hyp,y_train_hyp = ut.load_dataset()
     #Training Hypothesis network
     if os.path.isfile('trained_model_hyp.json'):
         print("Model found, loading...")
@@ -87,7 +95,7 @@ def main():
     #Define loss for Hyp-Net
 
     model_def_hyp.compile(optimizer = Adam(lr=0.0001), loss = hyp_loss, metrics=['accuracy'])
-    model_def_hyp.fit(x_train_hyp, y_train_hype, batch_size = 32, epochs = 10)
+    model_def_hyp.fit(x_train_hyp, y_train_hyp, batch_size = 32, epochs = 10)
     save_model(model_def_hyp, 'trained_model_hyp')
     #We need inference output of hypnet to train selnet
     y_train_sel_a, y_train_sel_b = model_def_hyp.predict(x_train_hyp)
