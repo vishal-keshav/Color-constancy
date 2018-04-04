@@ -27,7 +27,7 @@ def RGB_to_UV(image):
     #print(image.shape)
     image = np.stack((np.ma.log(image[:,:,0]) - np.ma.log(image[:,:,1]),
                      np.ma.log(image[:,:,2]) - np.ma.log(image[:,:,1])), axis = 2)
-    #print(image.shape)
+    assert (image.shape == (384,256,2))
     return image
 
 def nr_digits(i):
@@ -45,18 +45,26 @@ def zero_string(i):
 
 #http://lamda.nju.edu.cn/weixs/project/CNNTricks/CNNTricks.html
 def normalize_data(uv_image):
-    uv_image = uv_image - np.mean(uv_image, axis = 0) #Mean broadcasted
-    uv_image = uv_image/np.std(uv_image, axis = 0) #Not described in paper
+    (h,w,c) = uv_image.shape
+    assert (h == 384 and w == 256 and c == 2)
+    uv_image = uv_image - np.mean(uv_image, axis = 2).reshape(h,w,1) #Mean broadcasted
+    uv_image = uv_image/np.std(uv_image, axis = 2).reshape(h,w,1) #Not described in paper
+    assert (uv_image.shape == (384, 256, 2))
     return uv_image
 
 def convert_to_uv(gt_rgb):
+    """ No need to invert the illumination as wer are not applying it on image
     min_rgb = min(min(gt_rgb[0],gt_rgb[1]),gt_rgb[2])
     R = min_rgb/gt_rgb[0]
     G = min_rgb/gt_rgb[1]
-    B = min_rgb/gt_rgb[2]
+    B = min_rgb/gt_rgb[2]"""
+    R = gt_rgb[0]
+    G = gt_rgb[1]
+    B = gt_rgb[2]
     gt_uv = np.zeros(2)
     gt_uv[0] = np.ma.log(R/G)
     gt_uv[1] = np.ma.log(B/G)
+    assert True
     return gt_uv
 
 def split_to_patches(X1,X2,Y):
@@ -72,6 +80,8 @@ def split_to_patches(X1,X2,Y):
         patch_X1 = tf.reshape(patches1,[num_train_X*num_patch_row*num_patch_col,44,44,2]).eval()
         patch_X2 = tf.reshape(patches2,[num_train_X*num_patch_row*num_patch_col,44,44,2]).eval()
     patch_Y = np.repeat(Y, num_patch_row * num_patch_col, axis=0)
+    assert (patch_X1.shape[1] == 44 and patch_X1.shape[2] == 44 and patch_X1.shape[3] == 2)
+    assert (patch_X1.shape[0] == patch_X2.shape[0] == patch_Y.shape[0])
     return patch_X1, patch_X2, patch_Y
 
 def load_dataset():
@@ -84,22 +94,24 @@ def load_dataset():
         y_train = np.array(group_data.get('y_train'))
         data_file.close()
     else:
-        x_train_sel = np.zeros([568, 384, 256, 2], dtype = 'float32')
-        x_train_hyp = np.zeros([568, 384, 256, 2], dtype = 'float32')
-        y_train = np.zeros([568, 2], dtype = 'float32')
+        x_train_sel = np.zeros([5, 384, 256, 2], dtype = 'float32')
+        x_train_hyp = np.zeros([5, 384, 256, 2], dtype = 'float32')
+        y_train = np.zeros([5, 2], dtype = 'float32')
         path_input = '../../Dataset/GehlerShi_input/'
         path_output = '../../Dataset/GehlerShi_output/'
         #file_name = [000001, 000002, ... , 000568]
         file_names = []
-        for i in range(1, 569):
+        for i in range(1, 5):
             file_names.append('00' + zero_string(4-nr_digits(i)) + str(i))
         #print(file_names)
         for index,file_name in enumerate(file_names):
             image_blob = Image.open(os.path.join(path_input, file_name+".png"))
             image_array = np.array(image_blob.getdata())
             image_array = image_array.reshape(image_blob.size[0], image_blob.size[1],3)
+            #assert (image_array.shape==(384,256,3))
             image_array = image_array.astype('float32')
-            image_array = image_array/225
+            image_array = image_array/225.0
+            assert (image_array.shape==(384,256,3))
             image_array = RGB_to_UV(image_array)
             ground_truth = np.loadtxt(os.path.join(path_output, file_name+".txt"))
             ground_truth = convert_to_uv(ground_truth)

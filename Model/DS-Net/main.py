@@ -53,7 +53,7 @@ def build_inference_graph(in_shape, param, out_shape):
                         kernel_initializer='glorot_uniform')(layer)
         out_b = Dense(units = out_shape, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
-        model = Model(inputs = model_input, outputs = [out_a, out_b])
+        model = Model(inputs = model_input, outputs = (out_a, out_b))
     else:
         layer = Dense(units = 256, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
@@ -83,6 +83,8 @@ def prepare_sel_data(out_a, out_b, label):
 
 def main():
     x_train_sel,x_train_hyp,y_train_hyp = ut.load_dataset()
+    print(x_train_sel.shape)
+    print(y_train_hyp.shape)
     #Training Hypothesis network
     if os.path.isfile('trained_model_hyp.json'):
         print("Model found, loading...")
@@ -95,7 +97,7 @@ def main():
     #Define loss for Hyp-Net
 
     model_def_hyp.compile(optimizer = Adam(lr=0.0001), loss = hyp_loss, metrics=['accuracy'])
-    model_def_hyp.fit(x_train_hyp, y_train_hyp, batch_size = 32, epochs = 10)
+    model_def_hyp.fit(x_train_hyp, y_train_hyp, batch_size = 1, epochs = 10)
     save_model(model_def_hyp, 'trained_model_hyp')
     #We need inference output of hypnet to train selnet
     y_train_sel_a, y_train_sel_b = model_def_hyp.predict(x_train_hyp)
@@ -110,7 +112,7 @@ def main():
         model_def_sel = build_inference_graph(input_shape, ut.hyper_param_sel, output_shape)
     model_def_sel.summary()
     model_def_sel.compile(optimizer = Adam(lr=0.0001), loss = 'categorical_crossentropy', metrics=['accuracy'])
-    model_def_sel.fit(x_train, y_train_sel, batch_size = 32, epochs = 10)
+    model_def_sel.fit(x_train, y_train_sel, batch_size = 1, epochs = 10)
     save_model(model_def_sel, 'trained_model_sel')
     #Here we evaluate the DS-Net (HypNet+SelNet)
 
