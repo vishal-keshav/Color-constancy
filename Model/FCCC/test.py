@@ -1,7 +1,10 @@
-# Author: bulletcross@gmail.com (Vishal Keshav)
-# Module to construct FC4 network with novel weighted pooling
-import tensorflow as tf
+# Testing module for Alexnet weight transfer
+
+import os
+import cv2
 import numpy as np
+import tensorflow as tf
+from imagenet_classes import class_names
 
 def conv(x, filter_size, nr_filters, stride, name, groups=1, padding = 'SAME'):
   input_channels = int(x.get_shape()[-1])
@@ -22,16 +25,19 @@ def conv(x, filter_size, nr_filters, stride, name, groups=1, padding = 'SAME'):
     relu = tf.nn.relu(bias, name = scope.name)
     return relu
 
-def weighted_pooling(input):
-    assert (input.get_shape().as_list()[-1] == 4)
-    c, r, g, b = tf.split(input, num_or_size_splits = 4, axis = 3)
-    r_weighted = tf.tensordot(r,c, axes = 3)
-    g_weighted = tf.tensordot(g,c, axes = 3)
-    b_weighted = tf.tensordot(b,c, axes = 3)
-    output = tf.concat([r_weighted, g_weighted, b_weighted], axis = 3)
-    return output
+def fc(x, num_in, num_out, name, relu = True):
+  with tf.variable_scope(name) as scope:
+    weights = tf.get_variable('weights', shape=[num_in, num_out], trainable=True)
+    biases = tf.get_variable('biases', [num_out], trainable=True)
+    act = tf.nn.xw_plus_b(x, weights, biases, name=scope.name)
+    if relu == True:
+      relu = tf.nn.relu(act)
+      return relu
+    else:
+      return act
 
-def fc4_architecture(input):
+
+def test_alexnet(input, keep_prob):
     conv1 = conv(input, filter_size = 11, nr_filters = 96, stride = 4,
                     groups=1, padding = 'VALID', name = 'conv1')
     pool1 = tf.nn.max_pool(conv1, ksize=[1,3,3,1], strides = [1,2,2,1],
@@ -57,14 +63,46 @@ def fc4_architecture(input):
     pool5 = tf.nn.max_pool(conv5, ksize=[1,3,3,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool5')
 
-    conv6 = conv(pool5, filter_size = 6, nr_filters = 64, stride = 1,
-                    groups=1, padding = 'SAME', name = 'conv6')
-    conv6_drop = tf.nn.dropout(conv6, keep_prob = 0.5)
+    flattened = tf.reshape(pool5, [-1, 6*6*256])
+    fc6 = fc(flattened, 6*6*256, 4096, name='fc6')
+    dropout6 = tf.nn.dropout(fc6, keep_prob)
 
-    conv7 = conv(conv6_drop, filter_size = 1, nr_filters = 4, stride = 1,
-                    groups=1, padding = 'SAME', name = 'conv7')
+    fc7 = fc(dropout6, 4096, 4096, name = 'fc7')
+    dropout7 = tf.nn.dropout(fc7, keep_prob)
 
-    weight_pool7 = weighted_pooling(conv7)
-    summation = tf.reduce_sum(weighted_pool7, 3)
-    normalization = tf.nn.l2_normalize(summation)
-    return normalization
+    fc8 = fc(dropout7, 4096, 1000, relu = False, name='fc8')
+    return fc8
+
+def test_transfer_weight(sess):
+    weight_dict = np.load('bvlc_alexnet.npy', encoding = 'bytes').item()
+    #First transfer the weights to model
+    transfer_list = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7', 'fc8']
+    for op in transfer_list:
+        with tf.variable_scope(op, reuse = True):
+            for data in weight_dict[op]:
+                if len(data.shape) == 1:
+                    v = tf.get_variable('biases', trainable = True)
+                    sess.run(v.assign(data))
+                else:
+                    v = tf.get_variable('weights', trainable = True)
+                    sess.run(v.assign(data))
+    return
+
+def main():
+    imagenet_mean = np.array([104., 117., 124.], dtype=np.float32) # BRG mean
+    x = tf.placeholder(tf.float32, [1, 227, 227, 3])
+    prediction = tf.nn.softmax(test_alexnet(x,1.0))
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer()) # Initializing before weight assignment
+        test_transfer_weight(sess)
+        input_image = cv2.imread('test_image.jpeg') # Read in BRG
+        input_image = cv2.resize(input_image.astype(np.float32), (227,227))
+        input_image = input_image - imagenet_mean
+        input_image.resize([1,227,227,3])
+        out = sess.run(prediction, feed_dict = {x: input_image})
+        class_name = class_names[np.argmax(out)]
+        print(class_name)
+
+
+if __name__ == "__main__":
+    main()
