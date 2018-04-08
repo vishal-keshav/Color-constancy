@@ -28,10 +28,15 @@ def weighted_pooling(input):
     r_weighted = tf.tensordot(r,c, axes = 3)
     g_weighted = tf.tensordot(g,c, axes = 3)
     b_weighted = tf.tensordot(b,c, axes = 3)
+
+    assert (b_weighted.get_shape().as_list()[-1] == 1)
+    assert (b_weighted.get_shape().as_list()[-2] == input.get_shape().as_list()[-2])
+    assert (b_weighted.get_shape().as_list()[-3] == input.get_shape().as_list()[-3])
+
     output = tf.concat([r_weighted, g_weighted, b_weighted], axis = 3)
     return output
 
-def fc4_architecture(input):
+def fc4_architecture(input, prob):
     conv1 = conv(input, filter_size = 11, nr_filters = 96, stride = 4,
                     groups=1, padding = 'VALID', name = 'conv1')
     pool1 = tf.nn.max_pool(conv1, ksize=[1,3,3,1], strides = [1,2,2,1],
@@ -59,7 +64,7 @@ def fc4_architecture(input):
 
     conv6 = conv(pool5, filter_size = 6, nr_filters = 64, stride = 1,
                     groups=1, padding = 'SAME', name = 'conv6')
-    conv6_drop = tf.nn.dropout(conv6, keep_prob = 0.5)
+    conv6_drop = tf.nn.dropout(conv6, keep_prob = prob)
 
     conv7 = conv(conv6_drop, filter_size = 1, nr_filters = 4, stride = 1,
                     groups=1, padding = 'SAME', name = 'conv7')
@@ -67,4 +72,5 @@ def fc4_architecture(input):
     weight_pool7 = weighted_pooling(conv7)
     summation = tf.reduce_sum(weighted_pool7, 3)
     normalization = tf.nn.l2_normalize(summation)
+    assert (normalization.get_shape().as_list()[-1] == 3)
     return normalization

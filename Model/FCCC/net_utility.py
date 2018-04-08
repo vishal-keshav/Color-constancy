@@ -15,12 +15,15 @@ def transfer_weight(sess, weight_file, transfer_list, init_list):
         with tf.variable_scope(op, reuse = True):
             for data in weight_dict[op]:
                 if len(data.shape) == 1:
-                    v = tf.get_variable('biases', trainable = True)
+                    v = tf.get_variable('biases', trainable = True)# We train the weights
                     sess.run(v.assign(data))
                 else:
                     v = tf.get_variable('weights', trainable = True)
                     sess.run(v.assign(data))
-    # Initialize init_list ops
-    init_op = tf.variable_initializer(var_list = init_list)
-    sess.run(init_op)
+    # Initialize init_list ops, not required as we will initialize it in main
+    """for op in init_list:
+        with tf.variable_scope(op, reuse = True):
+            init_var_list = [tf.get_variable('biases'), tf.get_variable('weights')]
+            init_op = tf.variable_initializer(var_list = init_var_list)
+            sess.run(init_op)"""
     return
