@@ -3,6 +3,9 @@
 import tensorflow as tf
 import numpy as np
 
+
+im_mean = [104., 117., 124.] # BGR mean
+
 def conv(x, filter_size, nr_filters, stride, name, groups=1, padding = 'SAME'):
   input_channels = int(x.get_shape()[-1])
   convolve = lambda i, k: tf.nn.conv2d(i, k,
@@ -25,19 +28,24 @@ def conv(x, filter_size, nr_filters, stride, name, groups=1, padding = 'SAME'):
 def weighted_pooling(input):
     assert (input.get_shape().as_list()[-1] == 4)
     c, r, g, b = tf.split(input, num_or_size_splits = 4, axis = 3)
-    r_weighted = tf.tensordot(r,c, axes = 3)
-    g_weighted = tf.tensordot(g,c, axes = 3)
-    b_weighted = tf.tensordot(b,c, axes = 3)
+    r_weighted = tf.multiply(r,c)
+    g_weighted = tf.multiply(g,c)
+    b_weighted = tf.multiply(b,c)
 
     assert (b_weighted.get_shape().as_list()[-1] == 1)
     assert (b_weighted.get_shape().as_list()[-2] == input.get_shape().as_list()[-2])
     assert (b_weighted.get_shape().as_list()[-3] == input.get_shape().as_list()[-3])
 
     output = tf.concat([r_weighted, g_weighted, b_weighted], axis = 3)
+    #print(output.get_shape().as_list())
     return output
 
 def fc4_architecture(input, prob):
-    conv1 = conv(input, filter_size = 11, nr_filters = 96, stride = 4,
+    # Process the RGB data to BGR
+    r,g,b = tf.split(input, 3, 3)
+    bgr = tf.concat([b-im_mean[0], g-im_mean[1], r-im_mean[2]], 3)
+
+    conv1 = conv(bgr, filter_size = 11, nr_filters = 96, stride = 4,
                     groups=1, padding = 'VALID', name = 'conv1')
     pool1 = tf.nn.max_pool(conv1, ksize=[1,3,3,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool1')
@@ -69,8 +77,9 @@ def fc4_architecture(input, prob):
     conv7 = conv(conv6_drop, filter_size = 1, nr_filters = 4, stride = 1,
                     groups=1, padding = 'SAME', name = 'conv7')
 
-    weight_pool7 = weighted_pooling(conv7)
-    summation = tf.reduce_sum(weighted_pool7, 3)
-    normalization = tf.nn.l2_normalize(summation)
+    weighted_pool7 = weighted_pooling(conv7)
+    summation = tf.reduce_sum(weighted_pool7, [1,2])
+    #print(summation.get_shape().as_list())
+    normalization = tf.nn.l2_normalize(summation, dim=1)
     assert (normalization.get_shape().as_list()[-1] == 3)
     return normalization

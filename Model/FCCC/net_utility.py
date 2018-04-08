@@ -6,6 +6,9 @@ import numpy as np
 """
 Original AlexNet weights are stored in:
 http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/
+
+Adding l2_norm on all weights:
+https://stackoverflow.com/questions/36570904/how-to-define-weight-decay-for-individual-layers-in-tensorflow/36573850
 """
 
 def transfer_weight(sess, weight_file, transfer_list, init_list):

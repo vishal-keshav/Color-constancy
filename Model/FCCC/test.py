@@ -89,13 +89,13 @@ def test_transfer_weight(sess):
     return
 
 def main():
-    imagenet_mean = np.array([104., 117., 124.], dtype=np.float32) # BRG mean
+    imagenet_mean = np.array([104., 117., 124.], dtype=np.float32) # BGR mean
     x = tf.placeholder(tf.float32, [1, 227, 227, 3])
     prediction = tf.nn.softmax(test_alexnet(x,1.0))
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer()) # Initializing before weight assignment
         test_transfer_weight(sess)
-        input_image = cv2.imread('test_image.jpeg') # Read in BRG
+        input_image = cv2.imread('test_image.jpeg') # Read in BGR
         input_image = cv2.resize(input_image.astype(np.float32), (227,227))
         input_image = input_image - imagenet_mean
         input_image.resize([1,227,227,3])

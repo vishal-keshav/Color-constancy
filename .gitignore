@@ -2,4 +2,5 @@
 *.h5
 *.json
 *.npy
+Model/FCCC/tf_log/
 Dataset
