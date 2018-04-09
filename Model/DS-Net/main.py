@@ -53,7 +53,7 @@ def build_inference_graph(in_shape, param, out_shape):
                         kernel_initializer='glorot_uniform')(layer)
         out_b = Dense(units = out_shape, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)
-        model = Model(inputs = model_input, outputs = (out_a, out_b))
+        model = Model(inputs = model_input, outputs = [out_a, out_b])
     else:
         layer = Dense(units = 256, activation='relu',
                         kernel_initializer='glorot_uniform')(layer)

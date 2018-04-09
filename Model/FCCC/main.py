@@ -12,7 +12,8 @@ def main():
     lr_rate = 0.0001
     batch_size = 16
     drop_prob = 0.5
-    nr_epochs = 10
+    nr_epochs = 1
+    weight_decay = 0.00005
     transfer_list = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']
     init_list = ['conv6', 'conv7']
     weight_file = 'bvlc_alexnet.npy'
@@ -28,8 +29,13 @@ def main():
     #Construct computation graph
     out = M.fc4_architecture(x, keep_prob)
     with tf.name_scope("mse_loss"):
-        loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out))
+        var = tf.trainable_variables()
+        l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in var if 'biases' not in v.name ])*weight_decay
+        loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out)) + l2_loss
     tf.summary.scalar('mse_loss', loss)
+    with tf.name_scope("angular_loss"):
+        angular_loss = N.get_angular_error(out, y)
+    tf.summary.scalar('angular_loss', angular_loss)
     """
     # For training only new layers:
     train_var_list = [v for v in tf.trainable_variables() if v.name.split('/')[0] in init_list]
@@ -59,11 +65,11 @@ def main():
             for step in range(0, nr_step):
                 feed_x = train_x[step*batch_size: (step+1)*batch_size]
                 feed_y = train_y[step*batch_size: (step+1)*batch_size]
-                _, step_loss = sess.run([train_op,loss], feed_dict = {x: feed_x, y:feed_y, keep_prob: drop_prob})
+                _, step_loss, ang_loss = sess.run([train_op,loss,angular_loss], feed_dict = {x: feed_x, y:feed_y, keep_prob: drop_prob})
                 if step%1 == 0:
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y, keep_prob: 1.0})
                     writer.add_summary(summary, epoch*batch_size+step)
-                    print('Epoch= %d, step= %d,loss= %.2f' % (epoch, step, step_loss))
+                    print('Epoch= %d, step= %d,loss= %.4f, avg_angular_loss= %.4f' % (epoch, step, step_loss, ang_loss))
         chk_name = os.path.join(logs_path, 'model_epoch'+str(epoch)+'.ckpt')
         save_path = saver.save(sess, chk_name)
 

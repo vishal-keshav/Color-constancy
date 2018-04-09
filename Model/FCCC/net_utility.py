@@ -11,6 +11,13 @@ Adding l2_norm on all weights:
 https://stackoverflow.com/questions/36570904/how-to-define-weight-decay-for-individual-layers-in-tensorflow/36573850
 """
 
+def get_angular_error(predicted,label):
+    norm_ab = tf.multiply(tf.linalg.norm(predicted,axis=1),tf.linalg.norm(label,axis=1))
+    product_ab=tf.reduce_sum(tf.multiply(predicted,label),axis=1)
+    divide_ab=tf.divide(product_ab,norm_ab)
+    angu_error_ab=tf.acos(divide_ab)
+    return tf.reduce_mean(angu_error_ab)*180/np.pi
+
 def transfer_weight(sess, weight_file, transfer_list, init_list):
     weight_dict = np.load(weight_file, encoding = 'bytes').item()
     #First transfer the weights to model
