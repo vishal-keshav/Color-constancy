@@ -95,8 +95,9 @@ def main():
         model_def_hyp = build_inference_graph(input_shape, ut.hyper_param_hyp, output_shape)
     model_def_hyp.summary()
     #Define loss for Hyp-Net
-
-    model_def_hyp.compile(optimizer = Adam(lr=0.0001), loss = hyp_loss, metrics=['accuracy'])
+    print(x_train_hyp.shape)
+    print(y_train_hyp.shape)
+    model_def_hyp.compile(optimizer = Adam(lr=0.0001), loss = hyp_loss)
     model_def_hyp.fit(x_train_hyp, y_train_hyp, batch_size = 1, epochs = 10)
     save_model(model_def_hyp, 'trained_model_hyp')
     #We need inference output of hypnet to train selnet
