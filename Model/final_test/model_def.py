@@ -55,7 +55,7 @@ def intermediate_residual(depth_in, point_in, name):
     depth_out_tensor = tf.concat([depthconv_inter, conv_inter], axis = 3)
     depthconv_out = depthconv(depth_out_tensor, filter_size = 3, stride = 2,
                                     padding = 'SAME', name = name+'_depth2',
-                                    dilation = 1, multiplier = 2)
+                                    dilation = 1, multiplier = 1)
     point_out_tensor = tf.concat([pointconv_inter, conv_inter], axis = 3)
     pointconv_out = pointconv(point_out_tensor, nr_channels*2*2, stride = 2,
                                     name = name+'_point2')
@@ -70,7 +70,7 @@ def test_architecture(input):
 
     pool1_1 = tf.nn.max_pool(depthconv1_1, ksize=[1,2,2,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool1_1')
-    pool1_2 = tf.nn.max_pool(pointconv1_1, ksize=[1,2,2,1], strides = [1,2,2,1],
+    pool1_2 = tf.nn.max_pool(pointconv1_2, ksize=[1,2,2,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool1_2')
 
     depthconv3_1, pointconv3_2 = intermediate_residual(pool1_1, pool1_2, 'inter_res1')
