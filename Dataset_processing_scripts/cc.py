@@ -164,9 +164,15 @@ if __name__=="__main__":
     #Retinex_adjust.show(title="retinex_adjust")
     Retinex_adjust.save("retinex_adjust.png")
 
+    """test_gt = np.array([0.16238344, 0.45326359, 0.38435297])
+    gt = test_gt
+    White_bal = to_pil(white_balance(img,gt))
+    White_bal.show()
+    White_bal.save("ground_truth.png")"""
+
     if path.exists(sys.argv[1][:-3] + "txt"):
         gt = np.loadtxt(sys.argv[1][:-3]+"txt")
         White_bal = to_pil(white_balance(img,gt))
         White_bal.show()
         White_bal.save("ground_truth.png")
-    show_chroma_histogram(sys.argv[1])
+    #show_chroma_histogram(sys.argv[1])

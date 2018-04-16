@@ -25,7 +25,7 @@ def main():
     if not os.path.isdir(logs_path):
         os.mkdir(logs_path)
     # Declare placeholders
-    x = tf.placeholder(tf.float32, [batch_size, 512, 512, 3])
+    x = tf.placeholder(tf.float32, [batch_size, 384, 256, 3])
     y = tf.placeholder(tf.float32, [None, 3])
     #Construct computation graph
     out = M.test_architecture(x)
@@ -43,7 +43,7 @@ def main():
     with tf.name_scope("train"):
         train_op = tf.train.AdamOptimizer(lr_rate).minimize(loss)
     # Here get the train_x and train_y
-    train_x, train_y = ut.load_dataset()
+    train_x, train_y = ut.load_dataset_Cube()
     nr_step = int(train_x.shape[0]/batch_size)
     # Logging through tensorboard
     merged_summary = tf.summary.merge_all()
@@ -53,7 +53,6 @@ def main():
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         writer.add_graph(sess.graph)
-        N.transfer_weight(sess, weight_file, transfer_list, init_list)
         for epoch in range(0, nr_epochs):
             for step in range(0, nr_step):
                 feed_x = train_x[step*batch_size: (step+1)*batch_size]

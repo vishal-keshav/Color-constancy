@@ -64,7 +64,7 @@ def load_dataset_Cube():
         x_train = np.zeros([1365, 384, 256, 3], dtype = 'uint8')
         y_train = np.zeros([1365, 3], dtype = 'float32')
         path_input = '../../Dataset/Cube_input/'
-        path_output = '../../Dataset/Cude_output/'
+        path_output = '../../Dataset/Cube_output/'
         #file_name = [000001, 000002, ... , 000568]
         file_names = []
         for i in range(1, 1366):
@@ -77,7 +77,7 @@ def load_dataset_Cube():
             #ground_truth = np.loadtxt(os.path.join(path_output, file_name+".txt"))
             x_train[index] = image_array
             #y_train[index] = ground_truth
-        ground_truth = np.loadtxt(os.path.join(path_output, "gt.txt"))
+        ground_truth = np.loadtxt(os.path.join(path_output, "cube_gt.txt"))
         y_train = ground_truth.tolist()
         x_train = x_train.astype('float32')
         #x_train = x_train/225

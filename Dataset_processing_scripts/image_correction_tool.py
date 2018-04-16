@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import os
 
 def adjust_gamma(img, gamma = 1.0):
     # Gamma correction only on 8 bit per channel image
@@ -68,14 +69,26 @@ def correct_image_list(img_list, mask_info_list):
         img_list[i] = correct_image(img_list[i], mask_info_list[i])
     return img_list
 
-#def apply_gt(img, gt):
-
+def resize_image(img, sz):
+    img = cv2.resize(img, sz)
+    return img
 
 def main():
-    img = cv2.imread('CUBE.png', -1)
-    img = correct_image(img, None)
+    #img = cv2.imread('CUBE.png', -1)
+    #img = correct_image(img, None)
     #show_image(img)
-    cv2.imwrite('processed.png', img)
+    #cv2.imwrite('processed.png', img)
+    input_path = '../Dataset/Cube_unprocessed/'
+    out_path = '../Dataset/Cube_input/'
+    for i in range(1, 1366):
+        print("Processing image: "+ str(i))
+        file_name = str(i)
+        img_path_in = os.path.join(input_path, file_name+".png")
+        img = cv2.imread(img_path_in,-1)
+        img = correct_image(img, None)
+        img = resize_image(img, (384, 256))
+        img_path_out = os.path.join(out_path, file_name+".png")
+        cv2.imwrite(img_path_out, img)
 
 if __name__ == "__main__":
     main()

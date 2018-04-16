@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 def conv(input, filter_size, nr_filters, stride, name, padding = 'SAME', dilation = 1):
-    input_channels = int(input.get_shape())[-1]
+    input_channels = int(input.get_shape()[-1])
     with tf.variable_scope(name) as scope:
         weights = tf.get_variable(name = name + '_weights', shape = [filter_size, filter_size, input_channels, nr_filters])
         biases = tf.get_variable(name = name + '_biases', shape = [nr_filters])
@@ -12,23 +12,23 @@ def conv(input, filter_size, nr_filters, stride, name, padding = 'SAME', dilatio
         return relu
 
 def depthconv(input, filter_size, stride, name, padding = 'SAME', dilation = 1, multiplier = 1):
-    input_channels = int(input.get_shape())[-1]
+    input_channels = int(input.get_shape()[-1])
     with tf.variable_scope(name) as scope:
         weights = tf.get_variable(name = name + '_weights', shape = [filter_size, filter_size, input_channels, multiplier])
-        biases = tf.get_variable(name = name + '_biases', shape = [input_channels])
+        biases = tf.get_variable(name = name + '_biases', shape = [input_channels*multiplier])
         depthconv = tf.nn.depthwise_conv2d(input, weights, strides = [1, stride, stride, 1],
-                                      padding = padding, rate = dilation, name = name)
-        bias = tf.reshape(tf.nn.bias_add(depthconv, biases), conv.get_shape().as_list())
+                                      padding = padding, rate = [dilation, dilation], name = name)
+        bias = tf.reshape(tf.nn.bias_add(depthconv, biases), depthconv.get_shape().as_list())
         relu = tf.nn.relu(bias, name = scope.name)
         return relu
 
 def pointconv(input, nr_filters, stride, name):
-    input_channels = int(input.get_shape())[-1]
+    input_channels = int(input.get_shape()[-1])
     with tf.variable_scope(name) as scope:
         weights = tf.get_variable(name = name + '_weights', shape = [1, 1, input_channels, nr_filters])
         biases = tf.get_variable(name = name + '_biases', shape = [nr_filters])
-        pointconv = tf.nn.conv2d(input, weights, strides = [1, stride, stride, 1], padding = padding, name = name)
-        bias = tf.reshape(tf.nn.bias_add(pointconv, biases), conv.get_shape().as_list())
+        pointconv = tf.nn.conv2d(input, weights, strides = [1, stride, stride, 1], padding = 'SAME', name = name)
+        bias = tf.reshape(tf.nn.bias_add(pointconv, biases), pointconv.get_shape().as_list())
         relu = tf.nn.relu(bias, name = scope.name)
         return relu
 
@@ -43,7 +43,7 @@ def channel_weighted_pooling(weights, channel):
     return output
 
 def intermediate_residual(depth_in, point_in, name):
-    nr_channels = int(depth_in.get_shape())[-1]
+    nr_channels = int(depth_in.get_shape()[-1])
     depthconv_inter = depthconv(depth_in, filter_size = 3, stride = 2,
                                     padding = 'SAME', name = name+'_depth1',
                                     dilation = 1, multiplier = 2)
@@ -77,13 +77,14 @@ def test_architecture(input):
 
     pool2_1 = tf.nn.max_pool(depthconv3_1, ksize=[1,2,2,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool2_1')
-    pool2_2 = tf.nn.max_pool(pointconv1_1, ksize=[1,2,2,1], strides = [1,2,2,1],
+    pool2_2 = tf.nn.max_pool(pointconv3_2, ksize=[1,2,2,1], strides = [1,2,2,1],
                     padding = 'VALID', name = 'pool2_2')
 
     depthconv5_1, pointconv5_2 = intermediate_residual(pool2_1, pool2_2, 'inter_res2')
 
     ch_pool = channel_weighted_pooling(depthconv5_1, pointconv5_2)
-    avg_pool = tf.reduce_mean(ch_pool, [1,2])
+    avg_pool = tf.reduce_mean(ch_pool, [1,2], keepdims = True)
     fcn = pointconv(avg_pool, nr_filters = 3, stride = 1, name = 'fcn')
-    normalized_out = tf.nn.l2_normalization(fcn, dim=1)
-    return normalized_out
+    normalized_out = tf.nn.l2_normalize(fcn, dim=3)
+    flat_out = tf.squeeze(normalized_out, [1, 2])
+    return flat_out

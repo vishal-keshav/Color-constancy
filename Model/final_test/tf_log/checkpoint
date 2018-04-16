@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/vishal/Github/Color-constancy/Model/final_test/tf_log/model_epoch0.ckpt"
+all_model_checkpoint_paths: "/home/vishal/Github/Color-constancy/Model/final_test/tf_log/model_epoch0.ckpt"
