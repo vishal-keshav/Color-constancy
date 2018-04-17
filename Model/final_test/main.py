@@ -4,6 +4,8 @@ import numpy as np
 import model_def as M
 import utilities as ut
 import os
+# Thanks to data provide: yuanming-hu
+from data_provider import DataProvider
 
 # Constants (hyperparameter)
 lr_rate = 0.0001
@@ -29,6 +31,8 @@ def main():
     y = tf.placeholder(tf.float32, [None, 3])
     #Construct computation graph
     out = M.test_architecture(x)
+    dp = DataProvider(True, ['g0', 'g1', 'g2'])
+    dp.set_batch_size(batch_size)
     # Will test with a different loss function, maybe with angular loss directly
     with tf.name_scope("mse_loss"):
         var = tf.trainable_variables()
@@ -43,8 +47,9 @@ def main():
     with tf.name_scope("train"):
         train_op = tf.train.AdamOptimizer(lr_rate).minimize(loss)
     # Here get the train_x and train_y
-    train_x, train_y = ut.load_dataset_Cube()
-    nr_step = int(train_x.shape[0]/batch_size)
+    #train_x, train_y = ut.load_dataset_Cube()
+    #nr_step = int(train_x.shape[0]/batch_size)
+    nr_step = 100
     # Logging through tensorboard
     merged_summary = tf.summary.merge_all()
     writer = tf.summary.FileWriter(logs_path)
@@ -55,8 +60,11 @@ def main():
         writer.add_graph(sess.graph)
         for epoch in range(0, nr_epochs):
             for step in range(0, nr_step):
-                feed_x = train_x[step*batch_size: (step+1)*batch_size]
-                feed_y = train_y[step*batch_size: (step+1)*batch_size]
+                #feed_x = train_x[step*batch_size: (step+1)*batch_size]
+                #feed_y = train_y[step*batch_size: (step+1)*batch_size]
+                batch = dp.get_batch()
+                feed_x = batch[0]
+                feed_y = batch[1]
                 _, step_loss, ang_loss = sess.run([train_op,loss,angular_loss], feed_dict = {x: feed_x, y:feed_y})
                 if step%5 == 0:
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y})

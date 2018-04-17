@@ -3,5 +3,7 @@
 *.json
 *.npy
 Model/FCCC/tf_log/
+Model/FCCC/data/
 Model/final_test/tf_log/
+Model/final_test/data/
 Dataset
