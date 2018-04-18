@@ -32,7 +32,7 @@ def main():
     keep_prob = tf.placeholder(tf.float32)
     #Construct computation graph
     out = M.fc4_architecture(x, keep_prob)
-    dp = DataProvider(True, ['g0'])
+    dp = DataProvider(True, ['g0', 'g1', 'g2'])
     dp.set_batch_size(batch_size)
     with tf.name_scope("mse_loss"):
         var = tf.trainable_variables()
@@ -82,7 +82,8 @@ def main():
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y, keep_prob: 1.0})
                     writer.add_summary(summary, epoch*batch_size+step)
                     print('Epoch= %d, step= %d,loss= %.4f, avg_angular_loss= %.4f' % (epoch, step, step_loss, ang_loss))
-        chk_name = os.path.join(logs_path, 'model_epoch'+str(epoch)+'.ckpt')
+        dp.stop()
+        chk_name = os.path.join(logs_path, 'model.ckpt')
         save_path = saver.save(sess, chk_name)
 
 

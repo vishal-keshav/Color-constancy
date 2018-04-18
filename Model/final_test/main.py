@@ -9,10 +9,10 @@ from data_provider import DataProvider
 from data_provider import ImageRecord
 
 # Constants (hyperparameter)
-lr_rate = 0.0001
+lr_rate = 0.00001
 batch_size = 16
 drop_prob = 0.5
-nr_epochs = 1
+nr_epochs = 10
 weight_decay = 0.00005
 
 def angular_error(predicted,label):
@@ -31,7 +31,7 @@ def main():
     x = tf.placeholder(tf.float32, [batch_size, 512, 512, 3])
     y = tf.placeholder(tf.float32, [None, 3])
     #Construct computation graph
-    out = M.test_failsafe(x)
+    out = M.test_architecture2(x)
     dp = DataProvider(True, ['g0'])
     dp.set_batch_size(batch_size)
     # Will test with a different loss function, maybe with angular loss directly
@@ -71,7 +71,8 @@ def main():
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y})
                     writer.add_summary(summary, epoch*batch_size+step)
                     print('Epoch= %d, step= %d,loss= %.4f, avg_angular_loss= %.4f' % (epoch, step, step_loss, ang_loss))
-        chk_name = os.path.join(logs_path, 'model_epoch'+str(epoch)+'.ckpt')
+        dp.stop()
+        chk_name = os.path.join(logs_path, 'model.ckpt')
         save_path = saver.save(sess, chk_name)
 
 if __name__ == "__main__":
