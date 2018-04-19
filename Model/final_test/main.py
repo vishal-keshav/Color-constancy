@@ -6,6 +6,7 @@ import utilities as ut
 import os
 # Thanks to data provide: yuanming-hu
 from data_provider import DataProvider
+from data_provider import ImageRecord
 
 # Constants (hyperparameter)
 lr_rate = 0.0001
@@ -64,7 +65,7 @@ def main():
                 #feed_y = train_y[step*batch_size: (step+1)*batch_size]
                 batch = dp.get_batch()
                 feed_x = batch[0]
-                feed_y = batch[1]
+                feed_y = batch[2]
                 _, step_loss, ang_loss = sess.run([train_op,loss,angular_loss], feed_dict = {x: feed_x, y:feed_y})
                 if step%5 == 0:
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y})
