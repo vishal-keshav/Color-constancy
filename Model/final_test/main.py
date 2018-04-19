@@ -28,19 +28,19 @@ def main():
     if not os.path.isdir(logs_path):
         os.mkdir(logs_path)
     # Declare placeholders
-    x = tf.placeholder(tf.float32, [batch_size, 384, 256, 3])
+    x = tf.placeholder(tf.float32, [batch_size, 512, 512, 3])
     y = tf.placeholder(tf.float32, [None, 3])
     #Construct computation graph
-    out = M.test_architecture(x)
-    dp = DataProvider(True, ['g0', 'g1', 'g2'])
+    out = M.test_failsafe(x)
+    dp = DataProvider(True, ['g0'])
     dp.set_batch_size(batch_size)
     # Will test with a different loss function, maybe with angular loss directly
     with tf.name_scope("mse_loss"):
         var = tf.trainable_variables()
         # Do not l2 regularize for now
-        """l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in var if 'biases' not in v.name ])*weight_decay
-        loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out)) + l2_loss"""
-        loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out))
+        l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in var if 'biases' not in v.name ])*weight_decay
+        loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out)) + l2_loss
+        #loss = tf.reduce_mean(tf.losses.mean_squared_error(labels = y, predictions = out))
     tf.summary.scalar('mse_loss', loss)
     with tf.name_scope("angular_loss"):
         angular_loss = angular_error(out, y)
@@ -67,7 +67,7 @@ def main():
                 feed_x = batch[0]
                 feed_y = batch[2]
                 _, step_loss, ang_loss = sess.run([train_op,loss,angular_loss], feed_dict = {x: feed_x, y:feed_y})
-                if step%5 == 0:
+                if step%1 == 0:
                     summary = sess.run(merged_summary, feed_dict = {x: feed_x, y:feed_y})
                     writer.add_summary(summary, epoch*batch_size+step)
                     print('Epoch= %d, step= %d,loss= %.4f, avg_angular_loss= %.4f' % (epoch, step, step_loss, ang_loss))

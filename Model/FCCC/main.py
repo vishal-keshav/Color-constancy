@@ -32,7 +32,7 @@ def main():
     keep_prob = tf.placeholder(tf.float32)
     #Construct computation graph
     out = M.fc4_architecture(x, keep_prob)
-    dp = DataProvider(True, ['g0', 'g1', 'g2'])
+    dp = DataProvider(True, ['g0'])
     dp.set_batch_size(batch_size)
     with tf.name_scope("mse_loss"):
         var = tf.trainable_variables()
