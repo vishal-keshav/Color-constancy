@@ -9,11 +9,11 @@ from data_provider import DataProvider
 from data_provider import ImageRecord
 
 # Constants (hyperparameter)
-lr_rate = 0.00001
+lr_rate = 0.00005
 batch_size = 16
 drop_prob = 0.5
-nr_epochs = 10
-weight_decay = 0.00005
+nr_epochs = 30
+weight_decay = 0.000005
 
 def angular_error(predicted,label):
     norm_ab = tf.multiply(tf.linalg.norm(predicted,axis=1),tf.linalg.norm(label,axis=1))
@@ -32,7 +32,7 @@ def main():
     y = tf.placeholder(tf.float32, [None, 3])
     #Construct computation graph
     out = M.test_architecture2(x)
-    dp = DataProvider(True, ['g0'])
+    dp = DataProvider(True, ['g0', 'g1', 'g2'])
     dp.set_batch_size(batch_size)
     # Will test with a different loss function, maybe with angular loss directly
     with tf.name_scope("mse_loss"):
