@@ -44,7 +44,7 @@ INPUT_GAMMA = 2.2
 VIS_GAMMA = 2.2
 
 # Shuffle the images, after each epoch?
-DATA_SHUFFLE = True
+DATA_SHUFFLE = False
 
 VISUALIZE = 0
 SMOOTHNESS_REGULARIZATION = 0
