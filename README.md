@@ -1,1 +1,3 @@
 # Color-constancy
+
+Description of this project will be updated soon...
