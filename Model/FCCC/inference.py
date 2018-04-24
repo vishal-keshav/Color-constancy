@@ -23,7 +23,7 @@ def main():
     angular_loss = N.get_angular_error(out, y)
     dp = DataProvider(True, ['g0'])
     dp.set_batch_size(batch_size)
-    nr_step = 30
+    nr_step = 100
     saver = tf.train.Saver()
     with tf.Session() as sess:
         saver.restore(sess, "tf_log/model.ckpt")
