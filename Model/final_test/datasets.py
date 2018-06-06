@@ -49,10 +49,10 @@ class DataSet:
     return ''
 
   def get_directory(self):
-    return 'data/' + self.get_name() + '/'
+    return '../data/' + self.get_name() + '/'
 
   def get_img_directory(self):
-    return 'data/' + self.get_name() + '/'
+    return '../data/' + self.get_name() + '/'
 
   def get_meta_data_fn(self):
     return self.get_directory() + self.get_subset_name() + 'meta.pkl'
