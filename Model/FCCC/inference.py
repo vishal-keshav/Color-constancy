@@ -7,6 +7,7 @@ from data_provider import DataProvider
 from data_provider import ImageRecord
 import model_def as M
 import net_utility as N
+import utils as ut
 import show_patches as sp
 import sys
 import cv2
@@ -21,10 +22,12 @@ def main():
     keep_prob = tf.placeholder(tf.float32)
     out = M.fc4_architecture(x, keep_prob)
     angular_loss = N.get_angular_error(out, y)
+    # Probably use no augmentation in testing?
     dp = DataProvider(True, ['g0'])
     dp.set_batch_size(batch_size)
     nr_step = 100
     saver = tf.train.Saver()
+    errors = []
     with tf.Session() as sess:
         saver.restore(sess, "tf_log/model.ckpt")
         for epoch in range(0, nr_epochs):
@@ -34,6 +37,7 @@ def main():
                 feed_y = batch[2]
                 ans, angular_error = sess.run([out, angular_loss], feed_dict = {x: feed_x, y: feed_y, keep_prob: 1.0})
                 print(str(step) + " Angular_error: " + str(angular_error))
+                errors.append(angular_error)
                 print(ans[0])
                 print(feed_y[0])
                 img = feed_x[0] / feed_x[0].max()
@@ -45,6 +49,8 @@ def main():
                 img_pred = sp.apply_gt(img, ans[0])
                 cv2.imwrite("data/inference/" + str(step) + "_img_pred.png", 255*np.power(img_pred, 1 / 2.2))
         dp.stop()
+        # Print the stats
+        ut.print_angular_errors(errors)
 
 if __name__ == "__main__":
     main()
