@@ -17,7 +17,7 @@ def load_data(folds):
   r = ImageRecord('', '', '', '', '')
   for fold in folds:
     fn = get_image_pack_fn(fold)
-    print 'Loading image pack', fn
+    print('Loading image pack', fn)
     # cached
     if fn not in load_data.data:
       with open(fn) as f:
@@ -127,7 +127,7 @@ class DataProvider:
     self.records = records
     random.shuffle(self.records)
     self.data_count = len(self.records)
-    print '#records:', self.data_count, 'preprocessing...'
+    print('#records:', self.data_count, 'preprocessing...')
     self.preprocess()
     self.batch_size = None
     self.async_task = None
