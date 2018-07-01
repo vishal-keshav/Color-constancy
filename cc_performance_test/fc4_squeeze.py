@@ -20,8 +20,6 @@ class SqueezeNet(object):
     net = {}
     self.net = net
     self.model = pkl.load(open(MODEL_PATH, 'r'))
-    for k in self.model.keys():
-      print k, self.model[k].shape
     # Caffe order is BGR, this model is RGB.
     # The mean values are from caffe protofile from DeepScale/SqueezeNet github repo.
     # self.mean = tf.constant([123.0, 117.0, 104.0],
@@ -66,7 +64,6 @@ class SqueezeNet(object):
     net['fire8'] = self.fire_module('fire8', net['fire7'], 64, 256, 256)
     net['pool8'] = self.pool_layer('pool8', net['fire8'])
     net['fire9'] = self.fire_module('fire9', net['fire8'], 64, 256, 256)
-    print net['fire9'].shape
 
     # 50% dropout removed
     #net['dropout9'] = tf.nn.dropout(net['fire9'], self.dropout)
@@ -78,14 +75,11 @@ class SqueezeNet(object):
             name='conv10',
             init=np.transpose(self.model['conv10_weights'], [2, 3, 1, 0])),
         padding='VALID') + self.model['conv10_bias'][None, None, None, :]
-    print net['conv10'].shape
     net['relu10'] = self.relu_layer(
         'relu10',
         net['conv10'],
         b=self.bias_variable([1000], 'relu10_b', value=0.0))
-    print net['relu10'].shape
     net['pool10'] = self.pool_layer('pool10', net['relu10'], pooling_type='avg')
-    print net['pool10'].shape
     avg_pool_shape = tf.shape(net['pool10'])
 
     net['pool_reshaped'] = tf.reshape(net['pool10'], [avg_pool_shape[0], -1])
@@ -121,7 +115,6 @@ class SqueezeNet(object):
           'W' + name, shape, initializer=tf.contrib.layers.xavier_initializer())
     else:
       assert isinstance(init, np.ndarray)
-      print name, init.shape
       initial = tf.get_variable(
           'W' + name, shape, initializer=tf.constant_initializer(value=init))
 

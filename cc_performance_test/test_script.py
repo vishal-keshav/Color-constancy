@@ -25,13 +25,13 @@ def get_a_simple_model():
     #            kernel_size=[3, 3], activation=tf.nn.relu)
     #pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
     #output = tf.identity(pool1, name="output_tensor")
-    output = cnn.get_model(input)
+    #output = cnn.get_model(input)
     #output = dsnet.hyp_net_inference(input)
     #output = fc4.get_model(input)
     #output = fc4_squeeze.create_convnet(input)
     #output = fpc.get_model(input)
     #output = ours.test_architecture2(input)
-    #output = ours.test_architecture2_no_param(input)
+    output = ours.test_architecture2_no_param(input)
     output = tf.identity(output, name="output_tensor")
     return input, output
 
