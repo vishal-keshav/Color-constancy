@@ -18,31 +18,36 @@ import fc4_squeeze
 import fpc
 import ours
 
-def get_a_simple_model():
+model_list = ['cnn', 'dsnet', 'fc4-alex', 'fc4-squeeze', 'fpc', 'ours_conv', 'ours_pool']
+
+def get_model(model_name):
     input = tf.placeholder(tf.float32, [1, 224, 224, 3], name = 'input_tensor')
-    #input = tf.placeholder(tf.float32, [1, 47, 47, 3], name = 'input_tensor')
-    #conv1 = tf.layers.conv2d(inputs=input, filters=32,
-    #            kernel_size=[3, 3], activation=tf.nn.relu)
-    #pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-    #output = tf.identity(pool1, name="output_tensor")
-    #output = cnn.get_model(input)
-    #output = dsnet.hyp_net_inference(input)
-    #output = fc4.get_model(input)
-    #output = fc4_squeeze.create_convnet(input)
-    #output = fpc.get_model(input)
-    #output = ours.test_architecture2(input)
-    output = ours.test_architecture2_no_param(input)
+    if model_name == 'cnn':
+        output = cnn.get_model(input)
+    elif model_name == 'dsnet':
+        input = tf.placeholder(tf.float32, [1, 47, 47, 3], name = 'input_tensor')
+        output = dsnet.hyp_net_inference(input)
+    elif model_name == 'fc4-alex':
+        output = fc4.get_model(input)
+    elif model_name == 'fc4-squeeze':
+        output = fc4_squeeze.create_convnet(input)
+    elif model_name == 'fpc':
+        output = fpc.get_model(input)
+    elif model_name == 'ours_conv':
+        output = ours.test_architecture2(input)
+    else:
+        output = ours.test_architecture2_no_param(input)
     output = tf.identity(output, name="output_tensor")
     return input, output
 
 # Parameters
-def profile_param():
+def profile_param(name):
     """
     Profile with metadata
     """
     tf.reset_default_graph()
     run_meta = tf.RunMetadata()
-    input, output = get_a_simple_model()
+    input, output = get_model(name)
 
     profile_op = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
     params = tf.profiler.profile(tf.get_default_graph(), run_meta=run_meta, cmd='op',
@@ -50,12 +55,12 @@ def profile_param():
     print('PARAMS: ', params.total_parameters)
 
 
-def print_nodes():
+def print_nodes(name):
     """
     Print ops in the graph, with feedable information
     """
     tf.reset_default_graph()
-    input, output = get_a_simple_model()
+    input, output = get_model(name)
     graph = tf.get_default_graph()
     ops_list = graph.get_operations()
     tensor_list = np.array([ops.values() for ops in ops_list])
@@ -76,22 +81,22 @@ def print_nodes():
     print('TOTAL DIMS OF TRAINABLE VARIABLES', total_dims)
 
 # Floating point operations
-def profile_flops():
+def profile_flops(name):
     """
     Profiler with metadata
     """
     tf.reset_default_graph()
     run_meta = tf.RunMetadata()
-    input, output = get_a_simple_model()
+    input, output = get_model(name)
 
     profile_op = tf.profiler.ProfileOptionBuilder.float_operation()
     flops = tf.profiler.profile(tf.get_default_graph(), run_meta=run_meta, cmd='op',
                                     options=profile_op)
     print('FLOPS:', flops.total_float_ops)
 
-def create_tflite():
+def create_tflite(name):
     tf.reset_default_graph()
-    input, output = get_a_simple_model()
+    input, output = get_model(name)
     graph = tf.get_default_graph()
     with tf.Session(graph=graph) as sess:
         sess.run(tf.global_variables_initializer())
@@ -103,22 +108,25 @@ def create_tflite():
         # Convert the model to tflite file directly.
         tflite_model = tf.contrib.lite.toco_convert(
                 output_graph, input_tensors=[input], output_tensors=[output])
-        with open("model.tflite", "wb") as f:
+        with open('model_' + name + '.tflite', "wb") as f:
             f.write(tflite_model)
 
-def profile_file_size():
-    file_size = os.path.getsize("model.tflite")
+def profile_file_size(name):
+    file_size = os.path.getsize('model_' + name +'.tflite')
     print("FILE SIZE IN BYTES: ", file_size)
 
 
 def main():
     print("............Testing the profiler module................")
-    profile_flops()
-    profile_param()
-    print_nodes()
-    create_tflite()
-    profile_file_size()
-    #profile_mobile_exec()
+    #profile_flops()
+    #profile_param()
+    #print_nodes()
+    for i in range(0, len(model_list)):
+        try:
+            create_tflite(model_list[i])
+        except:
+            print(model_list[i] + ' cannot be converted')
+    #profile_file_size()
     return
 
 if __name__ == "__main__":
