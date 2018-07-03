@@ -23,6 +23,9 @@ def get_image_pack_fn(key):
     camera = int(key[1])
     fold = int(key[2])
     return ChengDataSet(camera).get_image_pack_fn(fold)
+  elif ds == 'd':
+    fold = int(key[1])
+    return CubeDataSet().get_image_pack_fn(fold)
   elif ds == 'm':
     assert False
 
