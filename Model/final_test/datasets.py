@@ -23,6 +23,9 @@ def get_image_pack_fn(key):
     camera = int(key[1])
     fold = int(key[2])
     return ChengDataSet(camera).get_image_pack_fn(fold)
+  elif ds == 'd':
+    fold = int(key[1])
+    return CubeDataSet().get_image_pack_fn(fold)
   elif ds == 'm':
     assert False
 
@@ -268,8 +271,68 @@ class ChengDataSet(DataSet):
     cv2.fillPoly(img, [polygon], (BOARD_FILL_COLOR,) * 3)
     return img
 
+class CubeDataSet(DataSet):
+
+  def get_name(self):
+    return 'Cube'
+
+  def regenerate_meta_data(self):
+    meta_data = []
+    print "Loading and shuffle fn_and_illum[]"
+    ground_truth = np.loadtxt(self.get_directory() + 'cube_gt.txt')
+    ground_truth /=np.linalg.norm(ground_truth, axis=1)[..., np.newaxis]
+
+    illums = ground_truth
+    filenames = sorted(os.listdir(self.get_directory() + 'images'))
+
+    for i in range(len(filenames)):
+      fn = filenames[i]
+      meta_data.append(
+          ImageRecord(
+              dataset = self.get_name(),
+              fn = fn,
+              illum = illums[i],
+              mcc_coord=None,
+              img = None))
+
+    random.shuffle(meta_data)
+
+    if DATA_FRAGMENT != -1:
+      meta_data = meta_data[:DATA_FRAGMENT]
+      print 'Warning: using only first %d images...' % len(meta_data)
+
+    meta_data = slice_list(meta_data, [1] * self.get_folds())
+    self.dump_meta_data(meta_data)
+
+  def load_image(self, fn, mask = 1):
+    file_path = self.get_directory() + 'images/' + str(fn)
+    img = np.array(cv2.imread(file_path, -1), dtype='float32')
+    saturation_level = np.amax(img)-2
+    black_level = 2048
+    img = img - black_level
+    img.clip(0)
+    m = np.zeros((img.shape[0], img.shape[1]))
+    for ch in range(0,2):
+        m = np.logical_or(m, img[:,:,ch] >= (saturation_level - black_level))
+    if(mask!=0):
+        m[1050:m.shape[0], 2050:m.shape[1]]
+    m = np.dstack((m,m,m))
+    img[m==True] = 0
+    img1 = img[...,[2,1,0]]
+    #to save the processed images uncomment below code
+    #file_path_op = self.get_directory() + 'images/' + 'p_' + str(fn)
+    #scipy.misc.toimage(img1,cmin=0.0).save(file_path_op)
+    return img1
+
+  def load_image_without_mcc(self, r):
+    raw = self.load_image(r.fn)
+    img = raw.astype(np.uint16)
+    return img
+
+
 
 if __name__ == '__main__':
-  ds = GehlerDataSet()
+  #ds = GehlerDataSet()
+  ds = CubeDataSet()
   ds.regenerate_meta_data()
   ds.regenerate_image_packs()
